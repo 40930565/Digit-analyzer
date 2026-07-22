@@ -1,10 +1,80 @@
+
 <!DOCTYPE html>
 <html>
 <head>
 <title>Digit Analyzer</title>
+<style>
+body{
+background:#111;
+color:white;
+font-family:Arial;
+text-align:center;
+}
+#ticker{
+font-size:40px;
+margin:20px;
+}
+.bar{
+height:20px;
+margin:5px;
+background:green;
+color:white;
+}
+</style>
 </head>
-<body style="background:black;color:white;text-align:center;font-family:Arial;">
-<h1>My Digit Analyzer is Working!</h1>
-<p>If you can see this page after publishing, GitHub Pages is working.</p>
+<body>
+
+<h1>Deriv Live Digit Analyzer</h1>
+
+<div id="ticker">-</div>
+
+<div id="digits"></div>
+
+<script>
+const counts = Array(10).fill(0);
+let total = 0;
+
+const ws = new WebSocket(
+"wss://ws.derivws.com/websockets/v3?app_id=1089"
+);
+
+ws.onopen = () => {
+ws.send(JSON.stringify({
+ticks: "R_100"
+}));
+};
+
+ws.onmessage = (msg) => {
+const data = JSON.parse(msg.data);
+
+if(data.tick){
+const quote = data.tick.quote.toString();
+const digit = Number(quote.slice(-1));
+
+document.getElementById("ticker").innerText = digit;
+
+counts[digit]++;
+total++;
+
+let html = "";
+
+for(let i=0;i<10;i++){
+const percent = total ? (counts[i]/total*100).toFixed(1) : 0;
+
+html += `
+<div>
+${i} (${percent}%)
+<div class="bar" style="
+width:${percent}%;
+background:${percent>=10?'green':'red'}">
+</div>
+</div>`;
+}
+
+document.getElementById("digits").innerHTML = html;
+}
+};
+</script>
+
 </body>
 </html>
