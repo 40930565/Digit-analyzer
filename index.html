@@ -1,79 +1,118 @@
-
 <!DOCTYPE html>
 <html>
 <head>
-<title>Digit Analyzer</title>
+<meta charset="UTF-8">
+<title>Deriv Over/Under</title>
+
 <style>
 body{
 background:#111;
 color:white;
 font-family:Arial;
 text-align:center;
-}
-#ticker{
-font-size:40px;
 margin:20px;
 }
+
+h1{
+font-size:45px;
+}
+
+#digit{
+font-size:100px;
+font-weight:bold;
+margin:20px;
+color:#00ff99;
+}
+
 .bar{
-height:20px;
-margin:5px;
-background:green;
-color:white;
+width:80%;
+height:35px;
+background:#333;
+margin:20px auto;
+border-radius:30px;
+overflow:hidden;
+}
+
+.fill{
+height:100%;
+width:0%;
+transition:.2s;
+}
+
+#overFill{
+background:#00cc66;
+}
+
+#underFill{
+background:#ff3333;
+}
+
+.label{
+font-size:28px;
 }
 </style>
+
 </head>
+
 <body>
 
-<h1>Deriv Live Digit Analyzer</h1>
+<h1>DERIV OVER / UNDER</h1>
 
-<div id="ticker">-</div>
+<div class="label">Current Digit</div>
+<div id="digit">-</div>
 
-<div id="digits"></div>
+<div class="label">
+OVER <span id="over">0%</span>
+</div>
+
+<div class="bar">
+<div id="overFill" class="fill"></div>
+</div>
+
+<div class="label">
+UNDER <span id="under">0%</span>
+</div>
+
+<div class="bar">
+<div id="underFill" class="fill"></div>
+</div>
 
 <script>
-const counts = Array(10).fill(0);
-let total = 0;
 
-const ws = new WebSocket(
-"wss://ws.derivws.com/websockets/v3?app_id=1089"
-);
+let ws=new WebSocket("wss://ws.derivws.com/websockets/v3?app_id=1089");
 
-ws.onopen = () => {
+ws.onopen=function(){
+
 ws.send(JSON.stringify({
-ticks: "R_100"
+ticks:"R_100",
+subscribe:1
 }));
-};
 
-ws.onmessage = (msg) => {
-const data = JSON.parse(msg.data);
-
-if(data.tick){
-const quote = data.tick.quote.toString();
-const digit = Number(quote.slice(-1));
-
-document.getElementById("ticker").innerText = digit;
-
-counts[digit]++;
-total++;
-
-let html = "";
-
-for(let i=0;i<10;i++){
-const percent = total ? (counts[i]/total*100).toFixed(1) : 0;
-
-html += `
-<div>
-${i} (${percent}%)
-<div class="bar" style="
-width:${percent}%;
-background:${percent>=10?'green':'red'}">
-</div>
-</div>`;
 }
 
-document.getElementById("digits").innerHTML = html;
+ws.onmessage=function(msg){
+
+let data=JSON.parse(msg.data);
+
+if(!data.tick) return;
+
+let quote=data.tick.quote.toString();
+
+let digit=parseInt(quote.slice(-1));
+
+document.getElementById("digit").innerHTML=digit;
+
+let over=((9-digit)/9)*100;
+let under=(digit/9)*100;
+
+document.getElementById("over").innerHTML=over.toFixed(0)+"%";
+document.getElementById("under").innerHTML=under.toFixed(0)+"%";
+
+document.getElementById("overFill").style.width=over+"%";
+document.getElementById("underFill").style.width=under+"%";
+
 }
-};
+
 </script>
 
 </body>
